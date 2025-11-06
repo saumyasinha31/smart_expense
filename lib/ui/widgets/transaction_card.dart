@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/transaction.dart';
+import '../../models/category.dart';
 import '../../utils/formatters.dart';
 import '../theme.dart';
 

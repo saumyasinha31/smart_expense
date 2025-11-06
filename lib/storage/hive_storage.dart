@@ -8,9 +8,9 @@ class HiveStorage {
   static const String _budgetsBoxName = 'budgetsBox';
   static const String _settingsBoxName = 'settingsBox';
 
-  late Box<Transaction> _transactionsBox;
-  late Box<CategoryBudget> _budgetsBox;
-  late Box<Settings> _settingsBox;
+  Box<Transaction>? _transactionsBox;
+  Box<CategoryBudget>? _budgetsBox;
+  Box<Settings>? _settingsBox;
 
   // Singleton pattern
   static final HiveStorage _instance = HiveStorage._internal();
@@ -22,14 +22,18 @@ class HiveStorage {
     await Hive.initFlutter();
 
     // Register adapters
+    try {
     if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(TransactionAdapter());
-    }
+        Hive.registerAdapter(TransactionAdapter());
+      }
     if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(CategoryBudgetAdapter());
-    }
+        Hive.registerAdapter(CategoryBudgetAdapter());
+      }
     if (!Hive.isAdapterRegistered(2)) {
-      Hive.registerAdapter(SettingsAdapter());
+        Hive.registerAdapter(SettingsAdapter());
+      }
+    } catch (e) {
+      // Ignore if registration fails
     }
 
     // Open boxes
@@ -49,76 +53,154 @@ class HiveStorage {
   // ==================== TRANSACTIONS ====================
 
   Future<void> addTransaction(Transaction transaction) async {
-    await _transactionsBox.put(transaction.id, transaction);
+  if (_transactionsBox == null) return;
+  try {
+    await _transactionsBox!.put(transaction.id, transaction);
+  } catch (e) {
+    // Ignore or log
+    }
   }
 
   Future<void> updateTransaction(Transaction transaction) async {
-    await _transactionsBox.put(transaction.id, transaction);
+  if (_transactionsBox == null) return;
+  try {
+    await _transactionsBox!.put(transaction.id, transaction);
+  } catch (e) {
+    // Ignore or log
+    }
   }
 
   Future<void> deleteTransaction(String id) async {
-    await _transactionsBox.delete(id);
+  if (_transactionsBox == null) return;
+  try {
+  await _transactionsBox!.delete(id);
+  } catch (e) {
+      // Ignore or log
+    }
   }
 
   List<Transaction> getAllTransactions() {
-    return _transactionsBox.values.toList();
+  if (_transactionsBox == null) return [];
+  try {
+    return _transactionsBox!.values.toList();
+  } catch (e) {
+    return [];
+    }
   }
 
   Stream<List<Transaction>> watchTransactions() {
-    return _transactionsBox.watch().map((_) => getAllTransactions());
+  if (_transactionsBox == null) return Stream.value([]);
+  try {
+    return _transactionsBox!.watch().map((_) => getAllTransactions());
+  } catch (e) {
+    return Stream.value([]);
+    }
   }
 
   Transaction? getTransactionById(String id) {
-    return _transactionsBox.get(id);
+    if (_transactionsBox == null) return null;
+    try {
+      return _transactionsBox!.get(id);
+    } catch (e) {
+      return null;
+    }
   }
 
   // ==================== BUDGETS ====================
 
   Future<void> saveBudget(CategoryBudget budget) async {
-    await _budgetsBox.put(budget.key, budget);
+  if (_budgetsBox == null) return;
+  try {
+    await _budgetsBox!.put(budget.key, budget);
+  } catch (e) {
+    // Ignore or log
+    }
   }
 
   Future<void> deleteBudget(String key) async {
-    await _budgetsBox.delete(key);
+  if (_budgetsBox == null) return;
+  try {
+  await _budgetsBox!.delete(key);
+  } catch (e) {
+      // Ignore or log
+    }
   }
 
   List<CategoryBudget> getAllBudgets() {
-    return _budgetsBox.values.toList();
+  if (_budgetsBox == null) return [];
+  try {
+    return _budgetsBox!.values.toList();
+  } catch (e) {
+    return [];
+    }
   }
 
   Stream<List<CategoryBudget>> watchBudgets() {
-    return _budgetsBox.watch().map((_) => getAllBudgets());
+  if (_budgetsBox == null) return Stream.value([]);
+  try {
+    return _budgetsBox!.watch().map((_) => getAllBudgets());
+  } catch (e) {
+    return Stream.value([]);
+    }
   }
 
   CategoryBudget? getBudget(String key) {
-    return _budgetsBox.get(key);
+    if (_budgetsBox == null) return null;
+    try {
+      return _budgetsBox!.get(key);
+    } catch (e) {
+      return null;
+    }
   }
 
   // ==================== SETTINGS ====================
 
   Future<void> saveSettings(Settings settings) async {
-    await _settingsBox.put('app_settings', settings);
+  if (_settingsBox == null) return;
+  try {
+    await _settingsBox!.put('app_settings', settings);
+  } catch (e) {
+    // Ignore or log
+    }
   }
 
   Settings getSettings() {
-    return _settingsBox.get('app_settings') ?? Settings();
+  if (_settingsBox == null) return Settings();
+  try {
+    return _settingsBox!.get('app_settings') ?? Settings();
+  } catch (e) {
+    return Settings();
+    }
   }
 
   Stream<Settings> watchSettings() {
-    return _settingsBox.watch(key: 'app_settings').map((_) => getSettings());
+  if (_settingsBox == null) return Stream.value(Settings());
+  try {
+    return _settingsBox!.watch(key: 'app_settings').map((_) => getSettings());
+  } catch (e) {
+    return Stream.value(Settings());
+    }
   }
 
   // ==================== CLEANUP ====================
 
   Future<void> close() async {
-    await _transactionsBox.close();
-    await _budgetsBox.close();
-    await _settingsBox.close();
+    try {
+      await _transactionsBox?.close();
+      await _budgetsBox?.close();
+      await _settingsBox?.close();
+    } catch (e) {
+      // Ignore
+    }
   }
 
   Future<void> clearAll() async {
-    await _transactionsBox.clear();
-    await _budgetsBox.clear();
-    await _settingsBox.clear();
+    try {
+      await _transactionsBox?.clear();
+      await _budgetsBox?.clear();
+      await _settingsBox?.clear();
+    } catch (e) {
+      // Ignore
+    }
   }
 }
