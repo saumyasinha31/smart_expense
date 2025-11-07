@@ -1,6 +1,6 @@
 # MyFinance — High-Level Design
 
-> Personal finance tracker with offline-first architecture, budget tracking, and expense analytics.
+> Personal finance tracker with offline-first architecture, budget tracking, expense analytics, and modern UI with drawer navigation.
 
 ---
 
@@ -10,6 +10,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                        UI Layer                             │
 │  Dashboard • Transactions • Add/Edit • Budgets • Settings   │
+│  Drawer Navigation • Swipe Gestures • Pie Chart Legend      │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          │ BlocBuilder / BlocListener
@@ -18,10 +19,10 @@
 ┌────────────────────────▼────────────────────────────────────┐
 │                      Bloc Layer                             │
 │                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ Transaction  │  │  Dashboard   │  │   Budget     │      │
-│  │    Bloc      │  │    Bloc      │  │    Bloc      │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────┐  │
+│  │ Transaction  │  │  Dashboard   │  │   Budget     │  │Theme│  │
+│  │    Bloc      │  │    Bloc      │  │    Bloc      │  │Bloc │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └─────┘  │
 │                                                              │
 └────────────────────────┬────────────────────────────────────┘
                          │
@@ -63,17 +64,21 @@
 Screens and widgets that users interact with. Each screen uses `BlocBuilder` to rebuild on state changes.
 
 **Screens:**
-- **Dashboard** — Balance card, recent transactions, expense chart
-- **Transactions** — List of all transactions with search/filter
-- **Add/Edit Transaction** — Form with validation
-- **Budgets** — Category budget limits with progress bars
-- **Settings** — Theme toggle, preferences
+- **Dashboard** — Balance card, recent transactions, expense chart with legend
+- **Transactions** — List with swipe-to-edit/delete, tap-to-edit
+- **Add/Edit Transaction** — Form with validation, INR currency
+- **Budgets** — Category budget limits with progress bars and alerts
+- **Settings** — Dark mode toggle
 
 **Widgets:**
-- `TransactionCard` — Single transaction tile
+- `TransactionCard` — Single transaction tile with tap/swipe support
 - `CategoryBadge` — Icon + color for categories
-- `BudgetProgressBar` — Visual budget consumption
-- `ExpenseChart` — Pie/bar chart for categories
+- `BudgetProgressBar` — Visual budget consumption with alerts
+- `ExpenseChart` — Pie chart with external legend (no overlapping text)
+
+**Navigation:**
+- Side drawer with proper icons (dashboard, receipt_long, account_balance_wallet, settings)
+- FAB for adding transactions on Dashboard and Transactions screens
 
 ---
 
@@ -100,6 +105,7 @@ Computes dashboard metrics from transaction data.
 
 **Events:**
 - `LoadDashboard` — Calculate balance, recent items, category totals
+- `RefreshDashboard` — Reload data
 
 **States:**
 - `DashboardLoading`
@@ -111,13 +117,22 @@ Manages category budgets and alerts.
 
 **Events:**
 - `LoadBudgets` — Fetch all budget limits
-- `SetBudget(category, amount)` — Set monthly limit
-- `CheckBudgetAlerts` — Evaluate if any category is near/over limit
+- `SetBudget(category, amount, month, year)` — Set monthly limit
+- `DeleteBudget(category, month, year)` — Remove budget
 
 **States:**
 - `BudgetLoading`
-- `BudgetLoaded(List<CategoryBudget>)`
-- `BudgetAlert(category, percentage, severity)` — Yellow (≥80%), Red (≥100%)
+- `BudgetLoaded(List<CategoryBudget>, Map<Category, double> currentSpent, Map<Category, BudgetAlertLevel> alerts)`
+- `BudgetError(String message)`
+
+#### **ThemeBloc**
+Manages app theme mode.
+
+**Events:**
+- `ToggleTheme` — Switch between light and dark mode
+
+**States:**
+- `ThemeState(ThemeMode themeMode)`
 
 ---
 
@@ -134,10 +149,13 @@ class FinanceRepository {
   Future<void> deleteTransaction(String id)
 
   Stream<List<CategoryBudget>> watchBudgets()
-  Future<void> setBudget(Category category, double limit)
+  Future<void> setBudget(Category category, double limit, int month, int year)
+  Future<void> deleteBudget(Category category, int month, int year)
 
   Future<double> getBalance()
-  Future<Map<Category, double>> getCategoryExpenses()
+  Future<Map<Category, double>> getCategoryExpenses({int? month, int? year})
+  Future<List<Transaction>> getRecentTransactions({int limit = 10})
+  Future<Map<Category, BudgetAlertLevel>> getBudgetAlerts(int month, int year)
 }
 ```
 
@@ -155,7 +173,7 @@ Hive-based offline persistence.
 
 **Hive Models:**
 - **Transaction** (typeId: 0) — id, amount, category, type, date, note
-- **CategoryBudget** (typeId: 1) — category, monthlyLimit, currentSpent
+- **CategoryBudget** (typeId: 1) — category, monthlyLimit, month, year
 - **Settings** (typeId: 2) — isDarkMode, currency
 
 ---
@@ -211,28 +229,42 @@ Emits DashboardLoadedState(balance, recent, categoryData)
 BlocBuilder rebuilds UI with:
  • Balance card
  • Recent transactions list
- • Pie chart of category expenses
+ • Pie chart with legend
 ```
 
 ---
 
-### **Budget Alert Flow**
+### **Swipe Edit/Delete Flow**
 
 ```
-New transaction added
+User swipes transaction
      ↓
-Repository stream notifies BudgetBloc
+Dismissible triggers onDismissed
      ↓
-BudgetBloc recalculates currentSpent for affected category
+Swipe right: delete (with confirm dialog)
+Swipe left: edit (direct navigation)
      ↓
-Checks: currentSpent vs monthlyLimit
+For delete: context.read<TransactionBloc>().add(DeleteTransaction(id))
      ↓
-If ≥80%: emit BudgetAlertState(category, percentage, 'warning')
-If ≥100%: emit BudgetAlertState(category, percentage, 'danger')
+Bloc emits success, UI shows snackbar with undo
      ↓
-Budgets screen (BlocBuilder) updates progress bar color:
- • Yellow for warning
- • Red for danger
+Local list updates immediately to prevent animation issues
+```
+
+---
+
+### **Theme Toggle Flow**
+
+```
+User toggles switch in Settings
+     ↓
+UI: context.read<ThemeBloc>().add(ToggleTheme())
+     ↓
+ThemeBloc emits ThemeState(newMode)
+     ↓
+BlocBuilder rebuilds MaterialApp with new themeMode
+     ↓
+App theme switches instantly
 ```
 
 ---
@@ -240,8 +272,8 @@ Budgets screen (BlocBuilder) updates progress bar color:
 ## Tech Stack
 
 ### **Framework**
-- Flutter 3.x+ (null-safety enabled)
-- Dart
+- Flutter SDK >=3.0.0 <4.0.0 with Dart
+- Null-safety enabled
 
 ### **State Management**
 - `flutter_bloc` + `bloc` — Predictable state management with events/states
@@ -251,11 +283,17 @@ Budgets screen (BlocBuilder) updates progress bar color:
 - Type adapters for custom models
 
 ### **Charts**
-- `fl_chart` — Animated pie/bar charts for expense analytics
+- `fl_chart` — Animated pie charts with external legends
 
 ### **Utilities**
 - `intl` — Currency and date formatting
 - `equatable` — Value equality for Bloc states/events
+
+### **UI Enhancements**
+- Swipe gestures for edit/delete
+- Drawer navigation with proper icons
+- INR currency support
+- Light/dark theme toggle
 
 ### **Linting**
 - `flutter_lints` — Recommended Flutter lints
@@ -264,55 +302,11 @@ Budgets screen (BlocBuilder) updates progress bar color:
 ### **UI Theme**
 - Primary Purple: `#7C3AED`, `#A78BFA`
 - Accent Yellow: `#FCD34D`
-- Background: `#FFFFFF`
+- Background: Light `#F9FAFB`, Dark `#111827`
 - Rounded corners, soft shadows, micro-animations
 
 ---
 
-## Bloc ↔ GetX Mapping Reference
+## Status: Implementation Complete
 
-| Bloc Pattern | GetX Equivalent |
-|--------------|-----------------|
-| `BlocProvider` | `Get.put(Controller())` |
-| `BlocBuilder` | `Obx(() => ...)` |
-| `context.read<Bloc>().add(Event)` | `Get.find<Controller>().method()` |
-| Event classes | Controller methods |
-| State classes | Reactive variables (`.obs`) |
-| `emit(NewState)` | `update()` or `.value = ...` |
-
-**Example:**
-
-**Bloc:**
-```dart
-// Event
-class AddTransactionEvent extends TransactionEvent {
-  final Transaction transaction;
-}
-
-// In Bloc
-on<AddTransactionEvent>((event, emit) async {
-  await repository.addTransaction(event.transaction);
-  emit(TransactionAddedState());
-});
-
-// UI
-context.read<TransactionBloc>().add(AddTransactionEvent(transaction));
-```
-
-**GetX Equivalent:**
-```dart
-// Controller
-class TransactionController extends GetxController {
-  void addTransaction(Transaction transaction) async {
-    await repository.addTransaction(transaction);
-    transactions.refresh();
-  }
-}
-
-// UI
-Get.find<TransactionController>().addTransaction(transaction);
-```
-
----
-
-**Status:** Awaiting approval before proceeding to Low-Level Design (LLD).
+The app is fully functional with all planned features implemented and tested.

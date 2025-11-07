@@ -45,7 +45,7 @@ lib/
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/saumyasinha31/smart_expense.git
 cd finance_assignment
 ```
 
