@@ -84,15 +84,20 @@ flutter test
 
 ## Screenshots
 
-[Add screenshots here]
+### 📱 App Screenshots
 
-## Contributing
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/7ecf6053-e408-4f77-a60e-b01bf6ad0830" width="120">
+  <img src="https://github.com/user-attachments/assets/2664dc09-36f2-4d50-81f6-8792d230df3f" width="120">
+  <img src="https://github.com/user-attachments/assets/3652f27d-afd2-4553-bdd8-7bc3a21a65ba" width="120">
+  <img src="https://github.com/user-attachments/assets/a67620e2-c4b4-4036-8899-e57e85ae8deb" width="120">
+  <img src="https://github.com/user-attachments/assets/d75f6a59-6d91-41a1-a5fe-838f532dbcd5" width="120">
+  <img src="https://github.com/user-attachments/assets/5805c45c-7484-4ca1-bedb-704cf62b4950" width="120">
+</p>
 
-1. Follow Flutter lints and formatting
-2. Write tests for new features
-3. Use meaningful commit messages
-4. Maintain clean, modular code structure
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/d24b94be-d2f8-4674-8b89-c027e47e2239" width="120">
+  <img src="https://github.com/user-attachments/assets/ca37b454-1a10-4f55-b723-d48db734e0d7" width="120">
 
-## License
+</p>
 
-This project is for educational purposes.
