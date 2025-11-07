@@ -55,8 +55,8 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             TextFormField(
               controller: _amountController,
               decoration: const InputDecoration(
-                labelText: 'Amount',
-                prefixText: '\$',
+              labelText: 'Amount',
+              prefixText: '₹',
               ),
               keyboardType: TextInputType.number,
               validator: Validators.validateAmount,

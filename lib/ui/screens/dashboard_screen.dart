@@ -22,41 +22,94 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _screens = [
-    DashboardContent(),
-    TransactionsScreen(),
-    BudgetsScreen(),
-    SettingsScreen(),
+  static const List<String> _titles = [
+    'Dashboard',
+    'Transactions',
+    'Budgets',
+    'Settings',
+  ];
+
+  List<Widget> get _screens => [
+    const DashboardContent(),
+    const TransactionsScreen(),
+    const BudgetsScreen(),
+    const SettingsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'Transactions',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            label: 'Budgets',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              child: const Text(
+                'MyFinance',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard),
+              title: const Text('Dashboard'),
+              selected: _selectedIndex == 0,
+              onTap: () {
+                setState(() => _selectedIndex = 0);
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long),
+              title: const Text('Transactions'),
+              selected: _selectedIndex == 1,
+              onTap: () {
+                setState(() => _selectedIndex = 1);
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet),
+              title: const Text('Budgets'),
+              selected: _selectedIndex == 2,
+              onTap: () {
+                setState(() => _selectedIndex = 2);
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              selected: _selectedIndex == 3,
+              onTap: () {
+                setState(() => _selectedIndex = 3);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
       ),
+      appBar: AppBar(
+        title: Text(_titles[_selectedIndex]),
+      ),
+      floatingActionButton: _selectedIndex == 0 || _selectedIndex == 1
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AddEditTransactionScreen(),
+                  ),
+                );
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }
@@ -66,51 +119,36 @@ class DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('MyFinance'),
-      ),
-      body: BlocBuilder<DashboardBloc, DashboardState>(
-        builder: (context, state) {
-          if (state is DashboardLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return BlocBuilder<DashboardBloc, DashboardState>(
+      builder: (context, state) {
+        if (state is DashboardLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          if (state is DashboardError) {
-            return Center(child: Text('Error: ${state.message}'));
-          }
+        if (state is DashboardError) {
+          return Center(child: Text('Error: ${state.message}'));
+        }
 
-          if (state is DashboardLoaded) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<DashboardBloc>().add(RefreshDashboard());
-              },
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  BalanceCard(balance: state.balance),
-                  const SizedBox(height: 16),
-                  ExpenseChart(categoryData: state.categoryExpenses),
-                  const SizedBox(height: 16),
-                  _buildRecentTransactions(state.recentTransactions),
-                ],
-              ),
-            );
-          }
-
-          return const SizedBox.shrink();
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AddEditTransactionScreen(),
+        if (state is DashboardLoaded) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<DashboardBloc>().add(RefreshDashboard());
+            },
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                BalanceCard(balance: state.balance),
+                const SizedBox(height: 16),
+                ExpenseChart(categoryData: state.categoryExpenses),
+                const SizedBox(height: 16),
+                _buildRecentTransactions(state.recentTransactions),
+              ],
             ),
           );
-        },
-        child: const Icon(Icons.add),
-      ),
+        }
+
+        return const SizedBox.shrink();
+      },
     );
   }
 

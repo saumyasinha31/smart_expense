@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
 
 class AppFormatters {
-  static String formatCurrency(double amount, {String symbol = '\$'}) {
+  static String formatCurrency(double amount, {String symbol = '₹'}) {
     return '$symbol${amount.toStringAsFixed(2)}';
   }
 

@@ -6,14 +6,16 @@ import '../theme.dart';
 
 class TransactionCard extends StatelessWidget {
   final Transaction transaction;
+  final VoidCallback? onTap;
 
-  const TransactionCard({Key? key, required this.transaction}) : super(key: key);
+  const TransactionCard({Key? key, required this.transaction, this.onTap}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isExpense = transaction.type.index == 1; // TransactionType.expense
     return Card(
       child: ListTile(
+        onTap: onTap,
         leading: CircleAvatar(
           backgroundColor: Color(int.parse(transaction.category.colorHex.replaceFirst('#', '0xff'))),
           child: Text(

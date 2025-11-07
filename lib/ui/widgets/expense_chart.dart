@@ -28,14 +28,9 @@ class ExpenseChart extends StatelessWidget {
       final color = Color(int.parse(entry.key.colorHex.replaceFirst('#', '0xff')));
       return PieChartSectionData(
         value: entry.value,
-        title: '${entry.key.displayName}\n\$${entry.value.toStringAsFixed(0)}',
         color: color,
-        radius: 60,
-        titleStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+        radius: 80,
+        showTitle: false,
       );
     }).toList();
 
@@ -49,7 +44,7 @@ class ExpenseChart extends StatelessWidget {
               'Expenses by Category',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             SizedBox(
               height: 200,
               child: PieChart(
@@ -59,6 +54,32 @@ class ExpenseChart extends StatelessWidget {
                   centerSpaceRadius: 40,
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: categoryData.entries.map((entry) {
+                final color = Color(int.parse(entry.key.colorHex.replaceFirst('#', '0xff')));
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${entry.key.displayName}: ₹${entry.value.toStringAsFixed(0)}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                );
+              }).toList(),
             ),
           ],
         ),

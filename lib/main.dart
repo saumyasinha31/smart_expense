@@ -8,6 +8,8 @@ import 'bloc/dashboard/dashboard_bloc.dart';
 import 'bloc/dashboard/dashboard_event.dart';
 import 'bloc/budget/budget_bloc.dart';
 import 'bloc/budget/budget_event.dart';
+import 'bloc/theme/theme_bloc.dart';
+import 'bloc/theme/theme_state.dart';
 import 'ui/theme.dart';
 import 'ui/screens/dashboard_screen.dart';
 
@@ -42,14 +44,21 @@ class MyFinanceApp extends StatelessWidget {
         BlocProvider(
           create: (context) => BudgetBloc(repository: repository)..add(LoadBudgets()),
         ),
+        BlocProvider(
+          create: (context) => ThemeBloc(),
+        ),
       ],
-      child: MaterialApp(
-        title: 'MyFinance',
-        debugShowCheckedModeBanner: false,
-        theme: lightTheme,
-        darkTheme: darkTheme,
-        themeMode: ThemeMode.light,
-        home: const DashboardScreen(),
+      child: BlocBuilder<ThemeBloc, ThemeState>(
+        builder: (context, themeState) {
+          return MaterialApp(
+            title: 'MyFinance',
+            debugShowCheckedModeBanner: false,
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: themeState.themeMode,
+            home: const DashboardScreen(),
+          );
+        },
       ),
     );
   }
